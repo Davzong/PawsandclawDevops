@@ -30,7 +30,7 @@ module "aws_ecr" {
 }
 
 module "aws_ecs" {
-  source                   = "../../modules/aws/back_end/ecs"
+  source                   = "../../modules/aws_backend/ecs"
   ecs_sg_id                = module.aws_security_group.ecs_sg_id
   main_alb_tg_id           = module.aws_lb.main_alb_tg_id
   alb_listener_http        = module.aws_lb.alb_listener_http
@@ -50,7 +50,7 @@ module "aws_ecs" {
 }
 
 module "aws_vpc" {
-  source                = "../../modules/aws/back_end/vpc"
+  source                = "../../modules/aws_backend/vpc"
   vpc_cidr              = lookup(var.vpc_cidr, terraform.workspace)
   az_count              = lookup(var.az_count, terraform.workspace)
   workspace             = lookup(var.workspace, terraform.workspace)
@@ -65,7 +65,7 @@ module "aws_vpc" {
 }
 
 module "aws_lb" {
-  source         = "../../modules/aws/back_end/lb"
+  source         = "../../modules/aws_backend/lb"
   vpc_id         = module.aws_vpc.vpc_id
   lb_sg_id       = module.aws_security_group.lb_sg_id
   lb_subnet_id   = module.aws_vpc.lb_subnet_id
@@ -76,7 +76,7 @@ module "aws_lb" {
 }
 
 module "aws_security_group" {
-  source                = "../../modules/aws/back_end/security_group"
+  source                = "../../modules/aws_backend/security_group"
   vpc_id                = module.aws_vpc.vpc_id
   workspace             = lookup(var.workspace, terraform.workspace)
   replicas              = var.replicas
@@ -87,7 +87,7 @@ module "aws_security_group" {
 }
 
 module "aws_cloudwatch" {
-  source                        = "../../modules/aws/back_end/cloudwatch"
+  source                        = "../../modules/aws_backend/cloudwatch"
   main_ecs_name                 = module.aws_ecs.main_ecs_name
   main_ecs_service_name         = module.aws_ecs.main_ecs_service_name
   ecs_as_cpu_high_threshold_per = lookup(var.ecs_as_cpu_high_threshold_per, terraform.workspace)
@@ -100,7 +100,7 @@ module "aws_cloudwatch" {
 
 
 module "aws_role" {
-  source    = "../../modules/aws/back_end/role"
+  source    = "../../modules/aws_backend/role"
   ecs_arn   = module.aws_ecs.ecs_arn
   workspace = lookup(var.workspace, terraform.workspace)
 
