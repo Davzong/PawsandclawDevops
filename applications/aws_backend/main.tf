@@ -24,7 +24,7 @@ terraform {
 
 
 module "aws_ecr" {
-  source    = "../../modules/aws/back_end/ecr"
+  source    = "../../modules/aws_backend/ecr"
   workspace = lookup(var.workspace, terraform.workspace)
 
 }
