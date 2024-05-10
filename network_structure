@@ -1,0 +1,30 @@
+az A{
+    - Internet Gateway
+    - public subnet 1 for nat Gateway
+    - eip 
+    - nat Gateway
+    - route table
+        - private subnet 1
+
+
+}
+
+
+
+=====================================
+
+
+az A {
+    - Internet Gateway
+    - Route Table with aws_internet_gateway
+    - Route Table Association
+    - public Subnet 1 
+    - public Subnet 2 for NAT Gateway
+        - NAT Gateway
+        - Route Table
+        - Route Table Association
+        - eip
+        - private Subnet 1
+        - private Subnet 2
+
+}
