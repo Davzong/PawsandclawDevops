@@ -1,0 +1,119 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # Job 1: Test and Build
+  test-build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - uses: pnpm/action-setup@v3
+        name: Install pnpm
+        with:
+          version: 8
+          run_install: false
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Lint Code
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: nextjs-out
+          path: out/
+
+  # Job 2: Deploy to AWS S3 and CloudFront
+  deploy-s3-cloudfront:
+    needs: test-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Download production artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: nextjs-out
+          path: out
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Sync files to S3
+        run: |
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ --delete
+
+      - name: Invalidate CloudFront Distribution
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+
+  # Job 3: Docker Build and Push to ECR
+  docker-build-push:
+    needs: test-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push Docker image to AWS ECR
+        run: |
+          docker build -t myapp:${{ github.sha }} .
+          docker tag myapp:${{ github.sha }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/myapp:${{ github.sha }}
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/myapp:${{ github.sha }}
+
+  # Job 4: Update ECS Service
+  update-ecs:
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          service: my-app-service
+          cluster: my-app-cluster
+          task-definition: ecs_task_definition.json
+          image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/myapp:${{ github.sha }}
