@@ -1,5 +1,5 @@
 # outputs.tf
 
 output "alb_hostname" {
-  value = aws_alb.main.dns_name
+  value = module.alb.alb_hostname
 }

@@ -18,7 +18,8 @@ data "template_file" "cb_app" {
 
 resource "aws_ecs_task_definition" "main" {
     family                   = "paws-and-claws-task-definition"
-    execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+    # execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+    execution_role_arn       = var.aws_iam_role_ecs_task_execution_role.arn
     network_mode             = "awsvpc"
     requires_compatibilities = ["FARGATE"]
     cpu                      = var.fargate_cpu
@@ -34,16 +35,16 @@ resource "aws_ecs_service" "main" {
     launch_type     = "FARGATE"
 
     network_configuration {
-        security_groups  = [aws_security_group.ecs_tasks.id]
-        subnets          = aws_subnet.private.*.id
+        security_groups  = [var.aws_security_group_ecs_tasks_id]
+        subnets          = var.aws_subnet_private.*.id
         assign_public_ip = true
     }
 
     load_balancer {
-        target_group_arn = aws_alb_target_group.app.id
+        target_group_arn = var.aws_alb_target_group_app_id
         container_name   = "paws-and-claws-ecr"
         container_port   = var.app_port
     }
 
-    depends_on = [aws_alb_listener.front_end, aws_iam_role_policy_attachment.ecs-task-execution-role-policy-attachment]
+    depends_on = [var.aws_alb_listener_front_end, var.aws_iam_role_policy_attachment_ecs_task_execution_role_policy_attachment]
 }
