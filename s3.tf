@@ -17,7 +17,6 @@ resource "aws_s3_bucket_website_configuration" "this" {
   error_document {
     key = "index.html"
   }
-
 }
 
 resource "aws_s3_bucket_policy" "this" {
