@@ -5,19 +5,6 @@ locals{
     cert_arn = "arn:aws:acm:us-east-1:058264389558:certificate/cc7cd607-a249-4ec8-b51c-00f8363023d4"
 }
 
-# locals {
-#   s3_origin_id   = "${var.s3_name}-origin"
-#   domain = "${var.s3_name}.s3-website-${var.region}.amazonaws.com"
-# }
-
-
-# resource "aws_cloudfront_origin_access_control" "main" {
-#   name = "s3-cloudfront-oac-test"
-#   origin_access_control_origin_type = "s3"
-#   signing_behavior = "always"
-#   signing_protocol = "sigv4"
-
-# }
 
 resource "aws_cloudfront_distribution" "this" {
   
@@ -29,14 +16,19 @@ resource "aws_cloudfront_distribution" "this" {
   
   origin {
     origin_id                = aws_s3_bucket.this.bucket
-    domain_name              = local.domain
-    # origin_access_control_id = aws_cloudfront_origin_access_control.main.id
+    origin_path              = "/out" 
+    domain_name              = "${aws_s3_bucket.this.bucket_regional_domain_name}"
 
+
+    #  s3_origin_config {
+    #   origin_access_identity = aws_cloudfront_origin_access_identity.this.cloudfront_access_identity_path
+
+    # }
     custom_origin_config {
       http_port              = 80
       https_port             = 443
       origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1"]
+      origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
 
@@ -48,13 +40,6 @@ resource "aws_cloudfront_distribution" "this" {
     cache_policy_id = "2e54312d-136d-493c-8eb9-b001f22f67d2"
     target_origin_id = local.s3_bucket_name
 
-    # forwarded_values {
-    #   query_string = true
-
-    #   cookies {
-    #     forward = "all"
-    #   }
-    # }
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
@@ -76,4 +61,28 @@ resource "aws_cloudfront_distribution" "this" {
 
   price_class = "PriceClass_200"
   
+}
+
+resource "aws_route53_record" "a_record" {
+  name    = local.domain
+  type    = "A"
+  zone_id = local.hosted_zone_id
+
+  alias {
+    evaluate_target_health = false
+    name                   = aws_cloudfront_distribution.main.domain_name
+    zone_id                = aws_cloudfront_distribution.main.hosted_zone_id
+  }
+}
+
+resource "aws_route53_record" "aaaa_record" {
+  name    = local.domain
+  type    = "AAAA"
+  zone_id = local.hosted_zone_id
+
+  alias {
+    evaluate_target_health = false
+    name                   = aws_cloudfront_distribution.main.domain_name
+    zone_id                = aws_cloudfront_distribution.main.hosted_zone_id
+  }
 }
