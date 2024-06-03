@@ -1,0 +1,25 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket",
+                "s3:PutBucketAcl",
+                "s3:PutBucketPolicy",
+                "s3:GetBucketLocation",
+                "s3:ListBucket",
+                "s3:PutBucketWebsite"
+            ],
+            "Resource": "arn:aws:s3:::paws-and-claws-test02"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:PutObjectAcl"
+            ],
+            "Resource": "arn:aws:s3:::paws-and-claws-test02/*"
+        }
+    ]
+}
