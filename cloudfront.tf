@@ -5,7 +5,6 @@ locals{
     cert_arn = "arn:aws:acm:us-east-1:058264389558:certificate/cc7cd607-a249-4ec8-b51c-00f8363023d4"
 }
 
-
 resource "aws_cloudfront_distribution" "this" {
   
   enabled = true
@@ -17,13 +16,8 @@ resource "aws_cloudfront_distribution" "this" {
   origin {
     origin_id                = aws_s3_bucket.this.bucket
     origin_path              = "/out" 
-    domain_name              = "${aws_s3_bucket.this.bucket_regional_domain_name}"
+    domain_name              = "${local.s3_bucket_name}.s3-website-us-east-1.amazonaws.com"
 
-
-    #  s3_origin_config {
-    #   origin_access_identity = aws_cloudfront_origin_access_identity.this.cloudfront_access_identity_path
-
-    # }
     custom_origin_config {
       http_port              = 80
       https_port             = 443
@@ -34,10 +28,10 @@ resource "aws_cloudfront_distribution" "this" {
 
 
   default_cache_behavior {
-    
+    path_pattern           = "/api/*"
     allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods = ["HEAD", "GET", "OPTIONS"]
-    cache_policy_id = "2e54312d-136d-493c-8eb9-b001f22f67d2"
+    cache_policy_id = "658327ea-f89d-4fab-a63d-7e88639e58f6"
     target_origin_id = local.s3_bucket_name
 
 
@@ -70,8 +64,8 @@ resource "aws_route53_record" "a_record" {
 
   alias {
     evaluate_target_health = false
-    name                   = aws_cloudfront_distribution.main.domain_name
-    zone_id                = aws_cloudfront_distribution.main.hosted_zone_id
+    name                   = aws_cloudfront_distribution.this.domain_name
+    zone_id                = aws_cloudfront_distribution.this.hosted_zone_id
   }
 }
 
@@ -82,7 +76,7 @@ resource "aws_route53_record" "aaaa_record" {
 
   alias {
     evaluate_target_health = false
-    name                   = aws_cloudfront_distribution.main.domain_name
-    zone_id                = aws_cloudfront_distribution.main.hosted_zone_id
+    name                   = aws_cloudfront_distribution.this.domain_name
+    zone_id                = aws_cloudfront_distribution.this.hosted_zone_id
   }
 }
